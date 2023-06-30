@@ -1,5 +1,27 @@
 //SPDX-License-Identifier:MIT
 
+// Layout of Contract:
+// version
+// imports
+// errors
+// interfaces, libraries, contracts
+// Type declarations
+// State variables
+// Events
+// Modifiers
+// Functions
+
+// Layout of Functions:
+// constructor
+// receive function (if exists)
+// fallback function (if exists)
+// external
+// public
+// internal
+// private
+// internal & private view & pure functions
+// external & public view & pure functions
+
 pragma solidity ^0.8.18;
 
 import {ReentrancyGuard} from "lib/openzeppelin-contracts/contracts/security/ReentrancyGuard.sol";
@@ -39,6 +61,7 @@ contract DSCEngine is ReentrancyGuard {
     uint256 private constant LIQUIDATION_THRESHOLD = 50; //200% over collateralized
     uint256 private constant LIQUIDATION_PRECISION = 100;
     uint256 private constant HEALTH_FACTOR_THRESHOLD = 1;
+    uint256 private constant ADDITIONAL_FEED_PRECISION = 1e10;
 
     mapping(address token => address priceFeed) private s_priceFeeds;
     mapping(address user => mapping(address token => uint256 amount)) private s_collateralDeposited;
@@ -86,10 +109,24 @@ contract DSCEngine is ReentrancyGuard {
         i_dsc = DecentralisedStableCoin(dscAddress);
     }
 
-    /////////////
+    ////////////////////////
     // External Functions //
-    /////////////
-    function depositCollateralAndMintDSC() external {}
+    ///////////////////////
+
+    /**
+     * @notice Function to deposit collateral and mint DSC in a single transaction.
+     *     @param _tokenCollateralAddress: The address of the token to deposit as collateral
+     *     @param _amountCollateral: The amount of collateral to deposit
+     *     @param _amountMintDSC: The amount of DSC to mint
+     */
+    function depositCollateralAndMintDSC(
+        address _tokenCollateralAddress,
+        uint256 _amountCollateral,
+        uint256 _amountMintDSC
+    ) external {
+        depositCollateral(_tokenCollateralAddress, _amountCollateral);
+        mintDSC(_amountMintDSC);
+    }
 
     /**
      * @notice follows CEI (Checks, Effects, Interactions) pattern
@@ -97,7 +134,7 @@ contract DSCEngine is ReentrancyGuard {
      *     @param _amountCollateral: The amount of collateral to deposit
      */
     function depositCollateral(address _tokenCollateralAddress, uint256 _amountCollateral)
-        external
+        public
         moreThanZero(_amountCollateral)
         isAllowedToken(_tokenCollateralAddress)
         nonReentrant
@@ -119,7 +156,7 @@ contract DSCEngine is ReentrancyGuard {
      *     @param _amount: The amount of DSC to mint
      *     @notice they must have more collateeral value than the minimum threshold
      */
-    function mintDSC(uint256 _amount) external moreThanZero(_amount) nonReentrant {
+    function mintDSC(uint256 _amount) public moreThanZero(_amount) nonReentrant {
         s_DSCMinted[msg.sender] += _amount;
 
         _revertIfHealthFactorIsBroken(msg.sender);
@@ -185,7 +222,7 @@ contract DSCEngine is ReentrancyGuard {
         // 1 ETH = $1000
         // Return value = 1000 * 1e8
         // aommunt is 10 * 1e18
-        // ((1000 * 1e8) * 10 * 1e18)/ 1e18
-        return (((uint256(price) * 1e10) * _amount) / 1e18);
+        // ((1000 * 1e8 * 1e10) * 10 * 1e18)/ 1e18
+        return (((uint256(price) * ADDITIONAL_FEED_PRECISION) * _amount) / 1e18);
     }
 }
