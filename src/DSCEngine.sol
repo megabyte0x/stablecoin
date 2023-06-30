@@ -186,7 +186,16 @@ contract DSCEngine is ReentrancyGuard {
         }
     }
 
-    function burnDSC() external {}
+    function burnDSC(uint256 _amountToBurn) external moreThanZero(_amountToBurn) {
+        s_DSCMinted[msg.sender] -= _amountToBurn;
+        bool success = i_dsc.transferFrom(msg.sender, address(this), _amountToBurn);
+        if (!success) {
+            revert DSCEngine__TransferFailed();
+        }
+
+        i_dsc.burn(_amountToBurn);
+        _revertIfHealthFactorIsBroken(msg.sender);
+    }
 
     function liquidate() external {}
 
