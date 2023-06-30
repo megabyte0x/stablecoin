@@ -54,6 +54,7 @@ contract DSCEngine is ReentrancyGuard {
     error DSCEngine__DepositCollateralFailed();
     error DSCEngine__HealthFactorIsBroken(uint256 healthFactor);
     error DSCEngine__MintDSCFailed();
+    error DSCEngine__TransferFailed();
 
     /////////////
     // State Variables //
@@ -75,6 +76,7 @@ contract DSCEngine is ReentrancyGuard {
     /////////////
 
     event CollateralDeposited(address indexed user, address indexed token, uint256 indexed amount);
+    event DSCEngine__CollateralRedeemed(address indexed user, address indexed token, uint256 indexed amount);
 
     /////////////
     // Modifiers //
@@ -149,7 +151,25 @@ contract DSCEngine is ReentrancyGuard {
 
     function redeemCollateralForDSC() external {}
 
-    function redeemCollateral() external {}
+    /**
+     * @notice In order to redeem collateral, the user must have health factor > 1 after the collateral is removed.
+     *
+     */
+    function redeemCollateral(address tokenCollateralAddress, uint256 amountCollateral)
+        external
+        moreThanZero(amountCollateral)
+        nonReentrant
+    {
+        s_collateralDeposited[msg.sender][tokenCollateralAddress] -= amountCollateral;
+        emit DSCEngine__CollateralRedeemed(msg.sender, tokenCollateralAddress, amountCollateral);
+
+        bool success = IERC20(tokenCollateralAddress).transfer(msg.sender, amountCollateral);
+        if (!success) {
+            revert DSCEngine__TransferFailed();
+        }
+
+        _revertIfHealthFactorIsBroken(msg.sender);
+    }
 
     /**
      * @notice follows CEI (Checks, Effects, Interactions) pattern
