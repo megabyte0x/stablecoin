@@ -149,14 +149,29 @@ contract DSCEngine is ReentrancyGuard {
         }
     }
 
-    function redeemCollateralForDSC() external {}
+    /**
+     * @notice Function to redeem collateral and burn DSC in a single transaction.
+     *     @param _tokenCollateralAddress: The address of the token to redeem
+     *     @param _amountCollateral: The amount of collateral to redeem
+     *     @param _amountToBurn: The amount of DSC to burn
+     */
+    function redeemCollateralForDSC(address _tokenCollateralAddress, uint256 _amountCollateral, uint256 _amountToBurn)
+        external
+        moreThanZero(_amountToBurn)
+        moreThanZero(_amountCollateral)
+    {
+        burnDSC(_amountToBurn);
+        redeemCollateral(_tokenCollateralAddress, _amountCollateral);
+        //redeem collateral already checks health factor
+    }
 
     /**
      * @notice In order to redeem collateral, the user must have health factor > 1 after the collateral is removed.
-     *
+     *   @param tokenCollateralAddress: The address of the token to redeem
+     *  @param amountCollateral: The amount of collateral to redeem
      */
     function redeemCollateral(address tokenCollateralAddress, uint256 amountCollateral)
-        external
+        public
         moreThanZero(amountCollateral)
         nonReentrant
     {
@@ -186,7 +201,11 @@ contract DSCEngine is ReentrancyGuard {
         }
     }
 
-    function burnDSC(uint256 _amountToBurn) external moreThanZero(_amountToBurn) {
+    /**
+     * @notice Function to burn DSC.
+     *     @param _amountToBurn: The amount of DSC to burn
+     */
+    function burnDSC(uint256 _amountToBurn) public moreThanZero(_amountToBurn) {
         s_DSCMinted[msg.sender] -= _amountToBurn;
         bool success = i_dsc.transferFrom(msg.sender, address(this), _amountToBurn);
         if (!success) {
