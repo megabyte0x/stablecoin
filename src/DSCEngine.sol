@@ -1,7 +1,5 @@
 // SPDX-License-Identifier: MIT
 
-// This is considered an Exogenous, Decentralized, Anchored (pegged), Crypto Collateralized low volitility coin
-
 // Layout of Contract:
 // version
 // imports
@@ -25,10 +23,22 @@
 
 pragma solidity ^0.8.30;
 
-import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-
 /**
- * @title DecentralisedStableCoin
- *     @author @megabyte0x
+ * @title DSCEngine
+ * @author @megabyte0x
  */
-contract DecentralisedStableCoin {}
+contract DSCEngine {
+    function depositCollateralAndMintDSC() external {}
+
+    function depositCollateral() external {}
+
+    function redeemCollateralForDSC() external {}
+
+    function redeemCollateral() external {}
+
+    function burnDSC() external {}
+
+    function liquidate() external {}
+
+    function getHealthFactor() external {}
+}
