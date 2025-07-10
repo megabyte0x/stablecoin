@@ -25,8 +25,6 @@ contract DSCEngineTest is Test {
 
     uint256 public constant AMOUNT_COLLATERAL = 10 ether;
     uint256 public constant AMOUNT_COLLATERAL_TO_REDEEM = 5 ether;
-    uint256 public constant LIQUIDATION_BONUS = 10;
-    uint256 public constant LIQUIDATION_PRECISION = 100;
     uint256 public constant AMOUNT_DEBT_TO_COVER = 100e18;
     uint256 public constant STARTING_ERC20_BALANCE = 100 ether;
     uint256 public constant AMOUNT_DSC_TO_MINT = 100e18;
@@ -367,7 +365,8 @@ contract DSCEngineTest is Test {
         uint256 tokenAmountFromDebtCovered = dscEngine.getTokenAmountFromUsd(weth, AMOUNT_DEBT_TO_COVER);
 
         // 10% bonus for liquidator
-        uint256 bonusCollateral = (tokenAmountFromDebtCovered * LIQUIDATION_BONUS) / LIQUIDATION_PRECISION;
+        uint256 bonusCollateral =
+            (tokenAmountFromDebtCovered * dscEngine.getLiquidationBonus()) / dscEngine.getLiquidationPrecision();
 
         // Expected Collateral Received
         uint256 expectedCollateralReceived = tokenAmountFromDebtCovered + bonusCollateral;

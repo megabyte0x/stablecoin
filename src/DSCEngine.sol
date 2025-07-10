@@ -225,10 +225,6 @@ contract DSCEngine is ReentrancyGuard {
         _revertIfHealthFactorIsBroken(liquidator);
     }
 
-    function getHealthFactor(address user) external view returns (uint256) {
-        return _healthFactor(user);
-    }
-
     ////////////////////////
     // Private and Internal Functions
     ////////////////////////
@@ -270,14 +266,17 @@ contract DSCEngine is ReentrancyGuard {
     function _healthFactor(address user) private view returns (uint256) {
         (uint256 totalDSCMinted, uint256 totalCollateralValueInUSD) = _getAccountInformation(user);
 
-        if (totalDSCMinted == 0) return type(uint256).max;
+        return _calculateHealthFactor(totalDSCMinted, totalCollateralValueInUSD);
+    }
 
-        // $1000 ETH x 50 /100 = $500
-        uint256 collateralAdjustedForThreshold =
-            (totalCollateralValueInUSD * LIQUIDATION_THRESHOLD) / LIQUIDATION_PRECISION;
-
-        // 500 * 1e18 / 1000 * 1e18 = 0.5
-        return (collateralAdjustedForThreshold * PRECISION) / totalDSCMinted;
+    function _calculateHealthFactor(uint256 totalDscMinted, uint256 collateralValueInUsd)
+        internal
+        pure
+        returns (uint256)
+    {
+        if (totalDscMinted == 0) return type(uint256).max;
+        uint256 collateralAdjustedForThreshold = (collateralValueInUsd * LIQUIDATION_THRESHOLD) / LIQUIDATION_PRECISION;
+        return (collateralAdjustedForThreshold * PRECISION) / totalDscMinted;
     }
 
     function _revertIfHealthFactorIsBroken(address user) internal view {
@@ -331,5 +330,33 @@ contract DSCEngine is ReentrancyGuard {
 
     function getCollateralTokenAmount(address user, address token) external view returns (uint256) {
         return s_collateralDeposited[user][token];
+    }
+
+    function getHealthFactor(address user) external view returns (uint256) {
+        return _healthFactor(user);
+    }
+
+    function calculateHealthFactor(uint256 totalDSCMinted, uint256 totalCollateralValueInUSD)
+        external
+        pure
+        returns (uint256)
+    {
+        return _calculateHealthFactor(totalDSCMinted, totalCollateralValueInUSD);
+    }
+
+    function getLiquidationBonus() external pure returns (uint256) {
+        return LIQUIDATION_BONUS;
+    }
+
+    function getLiquidationThreshold() external pure returns (uint256) {
+        return LIQUIDATION_THRESHOLD;
+    }
+
+    function getLiquidationPrecision() external pure returns (uint256) {
+        return LIQUIDATION_PRECISION;
+    }
+
+    function getCollateralTokens() external view returns (address[] memory) {
+        return s_collateralTokens;
     }
 }
