@@ -27,6 +27,7 @@ import {DecentralizedStableCoin} from "./DecentralizedStableCoin.sol";
 import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {AggregatorV3Interface} from "@chainlink/contracts/src/v0.8/shared/interfaces/AggregatorV3Interface.sol";
+import {OracleLib} from "./libraries/OracleLib.sol";
 /**
  * @title DSCEngine
  * @author @megabyte0x
@@ -45,6 +46,11 @@ contract DSCEngine is ReentrancyGuard {
     error DSCEngine__MintFailed();
     error DSCEngine__HealthFactorIsNotBroken();
     error DSCEngine__HealthFactorNotImproved();
+
+    ////////////////////////
+    // Type
+    ////////////////////////
+    using OracleLib for AggregatorV3Interface;
 
     ////////////////////////
     // State variables
@@ -292,7 +298,7 @@ contract DSCEngine is ReentrancyGuard {
 
     function getTokenAmountFromUsd(address token, uint256 usdAmountInWei) public view returns (uint256) {
         AggregatorV3Interface priceFeed = AggregatorV3Interface(s_priceFeeds[token]);
-        (, int256 price,,,) = priceFeed.latestRoundData();
+        (, int256 price,,,) = priceFeed.staleCheckLatestRoundData();
         // USD amount = $1000e18
         // ETH Price received = $2000e8
         // (1000e18 * 1e18 ) / (2000e8 * 1e10) = 5e17
@@ -311,7 +317,7 @@ contract DSCEngine is ReentrancyGuard {
 
     function getUSDValueOfToken(address token, uint256 amount) public view returns (uint256) {
         AggregatorV3Interface priceFeed = AggregatorV3Interface(s_priceFeeds[token]);
-        (, int256 price,,,) = priceFeed.latestRoundData();
+        (, int256 price,,,) = priceFeed.staleCheckLatestRoundData();
 
         // 1 ETH = 1000 USD
         // Return price = 1000 x 1e8
@@ -358,5 +364,9 @@ contract DSCEngine is ReentrancyGuard {
 
     function getCollateralTokens() external view returns (address[] memory) {
         return s_collateralTokens;
+    }
+
+    function getTokenPriceFeed(address collateralToken) external view returns (address priceFeed) {
+        priceFeed = s_priceFeeds[collateralToken];
     }
 }

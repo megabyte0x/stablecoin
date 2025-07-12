@@ -2,14 +2,14 @@
 pragma solidity ^0.8.30;
 
 import {Test} from "forge-std/Test.sol";
+import {console} from "forge-std/console.sol";
 import {DSCEngine} from "../../src/DSCEngine.sol";
 import {DecentralizedStableCoin} from "../../src/DecentralizedStableCoin.sol";
-import {ERC20Mock} from "@openzeppelin/contracts/mocks/token/ERC20Mock.sol";
 import {DeployDSC} from "../../script/DeployDSC.s.sol";
 import {HelperConfig} from "../../script/HelperConfig.s.sol";
 import {MockV3Aggregator} from "../mocks/MockV3Aggregator.sol";
-import {console} from "forge-std/console.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {ERC20Mock} from "@openzeppelin/contracts/mocks/token/ERC20Mock.sol";
 
 contract Handler is Test {
     DSCEngine dscEngine;
@@ -17,6 +17,8 @@ contract Handler is Test {
 
     ERC20Mock weth;
     ERC20Mock wbtc;
+    MockV3Aggregator wethUsdPriceFeed;
+    MockV3Aggregator wbtcUsdPriceFeed;
 
     uint256 public constant MAX_DEPOSIT_SIZE = type(uint96).max;
     uint256 public timesMintCalled;
@@ -30,6 +32,9 @@ contract Handler is Test {
         address[] memory collateralTokens = dscEngine.getCollateralTokens();
         weth = ERC20Mock(collateralTokens[0]);
         wbtc = ERC20Mock(collateralTokens[1]);
+
+        wethUsdPriceFeed = MockV3Aggregator(dscEngine.getTokenPriceFeed(address(weth)));
+        wbtcUsdPriceFeed = MockV3Aggregator(dscEngine.getTokenPriceFeed(address(wbtc)));
     }
 
     function mintAndDepositCollateral(uint256 collateralSeed, uint256 amountCollateral) public {
@@ -82,6 +87,12 @@ contract Handler is Test {
 
         timesMintCalled++;
     }
+
+    // function updateCollateralPrice(uint256 price) public {
+    //     int256 newPrice = int256(price);
+
+    //     wethUsdPriceFeed.updateAnswer(newPrice);
+    // }
 
     function _getCollateralFromSeed(uint256 collateralSeed) private view returns (ERC20Mock) {
         if (collateralSeed % 2 == 0) {
